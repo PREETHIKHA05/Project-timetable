@@ -1,56 +1,77 @@
-import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useExams } from '../context/ExamContext';
-import { ExamAlert } from '../types';
+import React, { useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useExams } from "../context/ExamContext";
+import { ExamAlert } from "../types";
 
-import { Calendar, FileText, Users, AlertTriangle, Plus, Download, Home, Building, Bell, User, LogOut, Clock, Edit } from 'lucide-react';
-import { CreateExamAlert } from './CreateExamAlert';
-import { EditExamAlert } from './EditExamAlert';
-import { EditExamSchedule } from './EditExamSchedule';
-import { ExamScheduleTable } from './ExamScheduleTable';
-import { PDFGenerator } from './PDFGenerator';
-import { StaffManagement } from './StaffManagement';
-import { SubjectManagement } from './SubjectManagement';
-import { ExamTimetable } from './ExamTimetable';
-import { examService } from '../services/examService';
+import {
+  Calendar,
+  FileText,
+  Users,
+  AlertTriangle,
+  Plus,
+  Download,
+  Home,
+  Building,
+  Bell,
+  User,
+  LogOut,
+  Clock,
+  Edit,
+} from "lucide-react";
+import { CreateExamAlert } from "./CreateExamAlert";
+import { EditExamAlert } from "./EditExamAlert";
+import { EditExamSchedule } from "./EditExamSchedule";
+import { ExamScheduleTable } from "./ExamScheduleTable";
+import { PDFGenerator } from "./PDFGenerator";
+import { StaffManagement } from "./StaffManagement";
+import { SubjectManagement } from "./SubjectManagement";
+
+import { examService } from "../services/examService";
 
 export const AdminDashboard: React.FC = () => {
   const { user, logout } = useAuth();
   const { exams, scheduledExams } = useExams();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'alerts' | 'overview' | 'pdf' | 'staff' | 'subjects' | 'timetable'>('dashboard');
+  const [activeTab, setActiveTab] = useState<
+    "dashboard" | "alerts" | "overview" | "pdf" | "staff" | "subjects"
+  >("dashboard");
   const [showCreateAlert, setShowCreateAlert] = useState(false);
   const [editingAlert, setEditingAlert] = useState<ExamAlert | null>(null);
   const [editingSchedule, setEditingSchedule] = useState<any | null>(null);
 
-  // Mock data - replace with actual API calls
-  const [alerts, setAlerts] = useState<ExamAlert[]>([
-    {
-      id: '1',
-      title: 'Internal Assessment-II - III Year',
-      startDate: '2025-02-04',
-      endDate: '2025-02-15',
-      year: 3,
-      semester: 8,
-      departments: ['CSE', 'ECE', 'EEE', 'MECH'],
-      createdAt: '2025-01-15',
-      status: 'active'
-    }
-  ]);
+  const [alerts, setAlerts] = useState<ExamAlert[]>([]);
 
-  const handleCreateAlert = (newAlert: Omit<ExamAlert, 'id' | 'createdAt'>) => {
-    const alert: ExamAlert = {
-      ...newAlert,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString().split('T')[0]
+  // Fetch alerts from DB on mount
+  React.useEffect(() => {
+    const fetchAlerts = async () => {
+      try {
+        const dbAlerts = await examService.getExamAlerts();
+        setAlerts(dbAlerts);
+      } catch (err) {
+        console.error("Failed to fetch exam alerts:", err);
+      }
     };
-    setAlerts([...alerts, alert]);
+    fetchAlerts();
+  }, []);
+
+  const handleCreateAlert = async () => {
+    // After creating, re-fetch alerts from DB
+    try {
+      const dbAlerts = await examService.getExamAlerts();
+      setAlerts(dbAlerts);
+    } catch (err) {
+      console.error("Failed to fetch exam alerts:", err);
+    }
     setShowCreateAlert(false);
   };
 
-  const handleUpdateAlert = (updatedAlert: ExamAlert) => {
-    setAlerts(alerts.map(alert => 
-      alert.id === updatedAlert.id ? updatedAlert : alert
-    ));
+  const handleUpdateAlert = async () => {
+    // Always re-fetch alerts from DB after update or delete
+    try {
+      const dbAlerts = await examService.getExamAlerts();
+      setAlerts(dbAlerts);
+    } catch (err) {
+      console.error("Failed to fetch exam alerts:", err);
+    }
     setEditingAlert(null);
   };
 
@@ -61,27 +82,59 @@ export const AdminDashboard: React.FC = () => {
       // The useExams context should handle the refresh
       setEditingSchedule(null);
     } catch (error) {
-      console.error('Error refreshing schedule data:', error);
+      console.error("Error refreshing schedule data:", error);
     }
   };
 
   const testExamSchedulesAccess = async () => {
     try {
       await examService.testExamSchedulesAccess();
-      alert('Successfully accessed exam_schedules table! Check console for details.');
+      alert(
+        "Successfully accessed exam_schedules table! Check console for details."
+      );
     } catch (error) {
-      console.error('Test failed:', error);
-      alert('Failed to access exam_schedules table. Check console for details.');
+      console.error("Test failed:", error);
+      alert(
+        "Failed to access exam_schedules table. Check console for details."
+      );
     }
   };
-  const scheduledExamsCount = exams.filter(exam => exam.status === 'scheduled').length;
-  const pendingExamsCount = exams.filter(exam => exam.status === 'pending').length;
-  
+  const scheduledExamsCount = exams.filter(
+    (exam) => exam.status === "scheduled"
+  ).length;
+  const pendingExamsCount = exams.filter(
+    (exam) => exam.status === "pending"
+  ).length;
+
   const stats = [
-    { label: 'Total Exam Alerts', value: alerts.length.toString(), icon: AlertTriangle, color: 'text-blue-600 bg-blue-100', progress: 25 },
-    { label: 'Scheduled Exams', value: scheduledExams.length.toString(), icon: Calendar, color: 'text-green-600 bg-green-100', progress: Math.min(scheduledExams.length * 10, 100) },
-    { label: 'Active Alerts', value: alerts.filter(a => a.status === 'active').length.toString(), icon: Calendar, color: 'text-orange-600 bg-orange-100', progress: 25 },
-    { label: 'Completion Rate', value: `${Math.round((scheduledExams.length / exams.length) * 100)}%`, icon: FileText, color: 'text-purple-600 bg-purple-100', progress: Math.min((scheduledExams.length / exams.length) * 100, 100) }
+    {
+      label: "Total Exam Alerts",
+      value: alerts.length.toString(),
+      icon: AlertTriangle,
+      color: "text-blue-600 bg-blue-100",
+      progress: 25,
+    },
+    {
+      label: "Scheduled Exams",
+      value: scheduledExams.length.toString(),
+      icon: Calendar,
+      color: "text-green-600 bg-green-100",
+      progress: Math.min(scheduledExams.length * 10, 100),
+    },
+    {
+      label: "Active Alerts",
+      value: alerts.filter((a) => a.status === "active").length.toString(),
+      icon: Calendar,
+      color: "text-orange-600 bg-orange-100",
+      progress: 25,
+    },
+    {
+      label: "Completion Rate",
+      value: `${Math.round((scheduledExams.length / exams.length) * 100)}%`,
+      icon: FileText,
+      color: "text-purple-600 bg-purple-100",
+      progress: Math.min((scheduledExams.length / exams.length) * 100, 100),
+    },
   ];
 
   return (
@@ -92,12 +145,18 @@ export const AdminDashboard: React.FC = () => {
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3 mb-4">
             <div className="h-12 w-12 bg-blue-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-lg">{user?.name?.charAt(0) || 'A'}</span>
+              <span className="text-white font-bold text-lg">
+                {user?.name?.charAt(0) || "A"}
+              </span>
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">{user?.name || 'Administrator'}</h3>
+              <h3 className="font-semibold text-gray-900">
+                {user?.name || "Administrator"}
+              </h3>
               <p className="text-sm text-gray-600">Administration</p>
-              <span className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full mt-1">Administrator</span>
+              <span className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full mt-1">
+                Administrator
+              </span>
             </div>
           </div>
         </div>
@@ -107,11 +166,11 @@ export const AdminDashboard: React.FC = () => {
           <ul className="space-y-2">
             <li>
               <button
-                onClick={() => setActiveTab('dashboard')}
+                onClick={() => setActiveTab("dashboard")}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                  activeTab === 'dashboard' 
-                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700' 
-                    : 'text-gray-700 hover:bg-gray-50'
+                  activeTab === "dashboard"
+                    ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+                    : "text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 <Home className="h-5 w-5" />
@@ -120,25 +179,27 @@ export const AdminDashboard: React.FC = () => {
             </li>
             <li>
               <button
-                onClick={() => setActiveTab('alerts')}
+                onClick={() => setActiveTab("alerts")}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                  activeTab === 'alerts' 
-                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700' 
-                    : 'text-gray-700 hover:bg-gray-50'
+                  activeTab === "alerts"
+                    ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+                    : "text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 <AlertTriangle className="h-5 w-5" />
                 <span>Exam Alerts</span>
-                <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">New</span>
+                <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                  New
+                </span>
               </button>
             </li>
             <li>
               <button
-                onClick={() => setActiveTab('overview')}
+                onClick={() => setActiveTab("overview")}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                  activeTab === 'overview' 
-                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700' 
-                    : 'text-gray-700 hover:bg-gray-50'
+                  activeTab === "overview"
+                    ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+                    : "text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 <FileText className="h-5 w-5" />
@@ -147,11 +208,11 @@ export const AdminDashboard: React.FC = () => {
             </li>
             <li>
               <button
-                onClick={() => setActiveTab('pdf')}
+                onClick={() => setActiveTab("pdf")}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                  activeTab === 'pdf' 
-                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700' 
-                    : 'text-gray-700 hover:bg-gray-50'
+                  activeTab === "pdf"
+                    ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+                    : "text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 <Download className="h-5 w-5" />
@@ -160,11 +221,11 @@ export const AdminDashboard: React.FC = () => {
             </li>
             <li>
               <button
-                onClick={() => setActiveTab('staff')}
+                onClick={() => setActiveTab("staff")}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                  activeTab === 'staff' 
-                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700' 
-                    : 'text-gray-700 hover:bg-gray-50'
+                  activeTab === "staff"
+                    ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+                    : "text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 <Users className="h-5 w-5" />
@@ -173,28 +234,15 @@ export const AdminDashboard: React.FC = () => {
             </li>
             <li>
               <button
-                onClick={() => setActiveTab('subjects')}
+                onClick={() => setActiveTab("subjects")}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                  activeTab === 'subjects' 
-                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700' 
-                    : 'text-gray-700 hover:bg-gray-50'
+                  activeTab === "subjects"
+                    ? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+                    : "text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 <FileText className="h-5 w-5" />
                 <span>Subject Management</span>
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={() => setActiveTab('timetable')}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                  activeTab === 'timetable' 
-                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700' 
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <Calendar className="h-5 w-5" />
-                <span>Exam Timetable</span>
               </button>
             </li>
           </ul>
@@ -220,15 +268,23 @@ export const AdminDashboard: React.FC = () => {
                 <span className="text-white font-bold">CIT</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Chennai Institute of Technology</h1>
-                <p className="text-sm text-gray-600">Examination Management System</p>
+                <h1 className="text-xl font-bold text-gray-900">
+                  Chennai Institute of Technology
+                </h1>
+                <p className="text-sm text-gray-600">
+                  Examination Management System
+                </p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">Administrator</span>
+              <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                Administrator
+              </span>
               <div className="flex items-center space-x-2">
                 <User className="h-5 w-5 text-gray-600" />
-                <span className="text-sm text-gray-700">{user?.name || 'Administrator'}</span>
+                <span className="text-sm text-gray-700">
+                  {user?.name || "Administrator"}
+                </span>
               </div>
               <button
                 onClick={logout}
@@ -254,15 +310,22 @@ export const AdminDashboard: React.FC = () => {
         {/* Main Content Area */}
         <main className="flex-1 p-6">
           {/* Dashboard Tab */}
-          {activeTab === 'dashboard' && (
+          {activeTab === "dashboard" && (
             <div className="space-y-6">
               {/* Header Banner */}
               <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-8 text-white">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h1 className="text-3xl font-bold mb-2">Administrative Dashboard</h1>
-                    <p className="text-blue-100 mb-1">Manage examination schedules and notifications</p>
-                    <p className="text-blue-200 text-sm">Chennai Institute of Technology • Examination Management System</p>
+                    <h1 className="text-3xl font-bold mb-2">
+                      Administrative Dashboard
+                    </h1>
+                    <p className="text-blue-100 mb-1">
+                      Manage examination schedules and notifications
+                    </p>
+                    <p className="text-blue-200 text-sm">
+                      Chennai Institute of Technology • Examination Management
+                      System
+                    </p>
                   </div>
                   <div className="text-right space-y-2">
                     <div className="text-2xl font-bold">12 Departments</div>
@@ -275,18 +338,23 @@ export const AdminDashboard: React.FC = () => {
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {stats.map((stat, index) => (
-                  <div key={index} className="bg-white rounded-lg shadow-sm p-6">
+                  <div
+                    key={index}
+                    className="bg-white rounded-lg shadow-sm p-6"
+                  >
                     <div className="flex items-center justify-between mb-4">
                       <div className={`p-3 rounded-lg ${stat.color}`}>
                         <stat.icon className="h-6 w-6" />
                       </div>
                     </div>
                     <div className="mb-2">
-                      <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                      <p className="text-3xl font-bold text-gray-900">
+                        {stat.value}
+                      </p>
                       <p className="text-sm text-gray-600">{stat.label}</p>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
+                      <div
                         className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                         style={{ width: `${stat.progress}%` }}
                       ></div>
@@ -301,17 +369,27 @@ export const AdminDashboard: React.FC = () => {
                 <div className="bg-white rounded-lg shadow-sm p-6">
                   <div className="flex items-center space-x-2 mb-4">
                     <FileText className="h-5 w-5 text-gray-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Recent Activity
+                    </h3>
                   </div>
-                  <p className="text-sm text-gray-600 mb-4">Latest examination alerts and schedules</p>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Latest examination alerts and schedules
+                  </p>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-3">
                       <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">internal Examination</p>
-                        <p className="text-xs text-gray-600">2025-26 • odd Semester</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          internal Examination
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          2025-26 • odd Semester
+                        </p>
                       </div>
-                      <span className="ml-auto text-xs text-gray-500">4 Year</span>
+                      <span className="ml-auto text-xs text-gray-500">
+                        4 Year
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -320,35 +398,43 @@ export const AdminDashboard: React.FC = () => {
                 <div className="bg-white rounded-lg shadow-sm p-6">
                   <div className="flex items-center space-x-2 mb-4">
                     <Building className="h-5 w-5 text-gray-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">Department Overview</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Department Overview
+                    </h3>
                   </div>
-                  <p className="text-sm text-gray-600 mb-4">Examination status across all departments</p>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Examination status across all departments
+                  </p>
                   <div className="grid grid-cols-3 gap-3">
-                    {['CSE', 'ECE', 'EEE', 'MECH', 'CE', 'IT'].map((dept: string) => (
-                      <div key={dept} className="bg-blue-50 rounded-lg p-3 text-center">
-                        <p className="text-sm font-medium text-blue-900">{dept}</p>
-                        <p className="text-xs text-blue-700">Department</p>
-                        <p className="text-xs text-green-600 font-medium">✓ Active</p>
-                      </div>
-                    ))}
+                    {["CSE", "ECE", "EEE", "MECH", "CE", "IT"].map(
+                      (dept: string) => (
+                        <div
+                          key={dept}
+                          className="bg-blue-50 rounded-lg p-3 text-center"
+                        >
+                          <p className="text-sm font-medium text-blue-900">
+                            {dept}
+                          </p>
+                          <p className="text-xs text-blue-700">Department</p>
+                          <p className="text-xs text-green-600 font-medium">
+                            ✓ Active
+                          </p>
+                        </div>
+                      )
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           )}
-
           {/* Alerts Tab */}
-          {activeTab === 'alerts' && (
+          {activeTab === "alerts" && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900">Examination Alerts</h2>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Examination Alerts
+                </h2>
                 <div className="flex items-center space-x-2">
-                  <button
-                    onClick={testExamSchedulesAccess}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-                  >
-                    <span>Test DB Access</span>
-                  </button>
                   <button
                     onClick={() => setShowCreateAlert(true)}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
@@ -361,10 +447,15 @@ export const AdminDashboard: React.FC = () => {
 
               <div className="grid gap-6">
                 {alerts.map((alert) => (
-                  <div key={alert.id} className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
+                  <div
+                    key={alert.id}
+                    className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500"
+                  >
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="text-lg font-medium text-gray-900">{alert.title}</h3>
+                        <h3 className="text-lg font-medium text-gray-900">
+                          {alert.title}
+                        </h3>
                         <p className="text-sm text-gray-600 mt-1">
                           Year {alert.year} • Semester {alert.semester}
                         </p>
@@ -372,20 +463,27 @@ export const AdminDashboard: React.FC = () => {
                           Duration: {alert.startDate} to {alert.endDate}
                         </p>
                         <div className="mt-2">
-                          <span className="text-sm text-gray-600">Departments: </span>
+                          <span className="text-sm text-gray-600">
+                            Departments:{" "}
+                          </span>
                           {alert.departments.map((dept, index) => (
-                            <span key={dept} className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded mr-1">
+                            <span
+                              key={dept}
+                              className="inline-block bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded mr-1"
+                            >
                               {dept}
                             </span>
                           ))}
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          alert.status === 'active' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            alert.status === "active"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
                           {alert.status}
                         </span>
                         <button
@@ -425,15 +523,16 @@ export const AdminDashboard: React.FC = () => {
               )}
             </div>
           )}
-
-              {/* Overview Tab */}
-          {activeTab === 'overview' && (
+          {/* Overview Tab */}
+          {activeTab === "overview" && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900">Exam Schedule Overview</h2>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Exam Schedule Overview
+                </h2>
                 <div className="flex space-x-4">
                   <button
-                    onClick={() => setActiveTab('pdf')}
+                    onClick={() => setActiveTab("pdf")}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
                   >
                     <Download className="h-4 w-4" />
@@ -441,40 +540,56 @@ export const AdminDashboard: React.FC = () => {
                   </button>
                 </div>
               </div>
-              
+
               {/* Quick Stats */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white rounded-lg shadow-sm p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900">Total Scheduled</h3>
+                    <h3 className="text-lg font-medium text-gray-900">
+                      Total Scheduled
+                    </h3>
                     <Calendar className="h-6 w-6 text-blue-600" />
                   </div>
-                  <p className="text-3xl font-bold text-gray-900">{scheduledExams.length}</p>
-                  <p className="text-sm text-gray-600 mt-1">Active exam schedules</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {scheduledExams.length}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Active exam schedules
+                  </p>
                 </div>
-                
+
                 <div className="bg-white rounded-lg shadow-sm p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900">Departments</h3>
+                    <h3 className="text-lg font-medium text-gray-900">
+                      Departments
+                    </h3>
                     <Building className="h-6 w-6 text-green-600" />
                   </div>
                   <p className="text-3xl font-bold text-gray-900">
-                    {new Set(scheduledExams.map(exam => exam.department)).size}
+                    {
+                      new Set(scheduledExams.map((exam) => exam.department))
+                        .size
+                    }
                   </p>
-                  <p className="text-sm text-gray-600 mt-1">With active schedules</p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    With active schedules
+                  </p>
                 </div>
-                
+
                 <div className="bg-white rounded-lg shadow-sm p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-lg font-medium text-gray-900">Next Exam</h3>
+                    <h3 className="text-lg font-medium text-gray-900">
+                      Next Exam
+                    </h3>
                     <Clock className="h-6 w-6 text-purple-600" />
                   </div>
                   {scheduledExams.length > 0 ? (
                     <>
                       <p className="text-xl font-bold text-gray-900">
-                        {new Date(scheduledExams[0].examDate).toLocaleDateString()}
+                        {new Date(
+                          scheduledExams[0].examDate
+                        ).toLocaleDateString()}
                       </p>
-
                     </>
                   ) : (
                     <p className="text-sm text-gray-600">No upcoming exams</p>
@@ -491,7 +606,9 @@ export const AdminDashboard: React.FC = () => {
                     </h3>
                     <div className="flex items-center space-x-2">
                       <Clock className="h-5 w-5 text-blue-600" />
-                      <span className="text-sm text-gray-600">Latest Updates</span>
+                      <span className="text-sm text-gray-600">
+                        Latest Updates
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -500,12 +617,17 @@ export const AdminDashboard: React.FC = () => {
                   <div className="px-6 py-8 text-center">
                     <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-500">No exams scheduled yet</p>
-                    <p className="text-sm text-gray-400 mt-1">Teachers can schedule exams from their dashboard</p>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Teachers can schedule exams from their dashboard
+                    </p>
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-200">
                     {scheduledExams.map((schedule) => (
-                      <div key={schedule.id} className="px-6 py-4 hover:bg-gray-50">
+                      <div
+                        key={schedule.id}
+                        className="px-6 py-4 hover:bg-gray-50"
+                      >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <div className="flex items-center space-x-3">
@@ -521,13 +643,15 @@ export const AdminDashboard: React.FC = () => {
                             </div>
                             <div className="flex items-center space-x-4 mt-1">
                               <p className="text-sm text-gray-600">
-                                <span className="font-medium">Date:</span> {new Date(schedule.examDate).toLocaleDateString()}
+                                <span className="font-medium">Date:</span>{" "}
+                                {new Date(
+                                  schedule.examDate
+                                ).toLocaleDateString()}
                               </p>
+                              <p className="text-sm text-gray-600"></p>
                               <p className="text-sm text-gray-600">
-
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                <span className="font-medium">Room:</span> {schedule.room || 'TBA'}
+                                <span className="font-medium">Room:</span>{" "}
+                                {schedule.room || "TBA"}
                               </p>
                             </div>
                             <div className="flex items-center space-x-2 mt-2">
@@ -559,39 +683,38 @@ export const AdminDashboard: React.FC = () => {
               {/* Department-wise Schedule Table */}
               <div className="bg-white rounded-lg shadow-sm">
                 <div className="px-6 py-4 border-b border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900">Detailed Schedule</h3>
+                  <h3 className="text-lg font-medium text-gray-900">
+                    Detailed Schedule
+                  </h3>
                 </div>
                 <div className="p-6">
-                  <ExamScheduleTable exams={exams} scheduledExams={scheduledExams} />
+                  <ExamScheduleTable
+                    exams={exams}
+                    scheduledExams={scheduledExams}
+                  />
                 </div>
               </div>
             </div>
-          )}          {/* PDF Generation Tab */}
-          {activeTab === 'pdf' && (
+          )}{" "}
+          {/* PDF Generation Tab */}
+          {activeTab === "pdf" && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900">Generate Examination Timetable PDF</h2>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Generate Examination Timetable PDF
+              </h2>
               <PDFGenerator />
             </div>
           )}
-
           {/* Staff Management Tab */}
-          {activeTab === 'staff' && (
+          {activeTab === "staff" && (
             <div className="space-y-6">
               <StaffManagement />
             </div>
           )}
-
           {/* Subject Management Tab */}
-          {activeTab === 'subjects' && (
+          {activeTab === "subjects" && (
             <div className="space-y-6">
               <SubjectManagement />
-            </div>
-          )}
-
-          {/* Exam Timetable Tab */}
-          {activeTab === 'timetable' && (
-            <div className="space-y-6">
-              <ExamTimetable />
             </div>
           )}
         </main>

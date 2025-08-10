@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { X, Save, AlertTriangle, Calendar, Users } from 'lucide-react';
-import { ExamAlert } from '../types';
-import { examService } from '../services/examService';
+import React, { useState } from "react";
+import { X, Save, AlertTriangle, Calendar, Users } from "lucide-react";
+import { ExamAlert } from "../types";
+import { examService } from "../services/examService";
 
 interface EditExamAlertProps {
   alert: ExamAlert;
@@ -9,25 +9,22 @@ interface EditExamAlertProps {
   onUpdate: () => void;
 }
 
-export const EditExamAlert: React.FC<EditExamAlertProps> = ({ alert, onClose, onUpdate }) => {
+export const EditExamAlert: React.FC<EditExamAlertProps> = ({
+  alert,
+  onClose,
+  onUpdate,
+}) => {
   const [formData, setFormData] = useState({
     title: alert.title,
     startDate: alert.startDate,
     endDate: alert.endDate,
     year: alert.year,
     semester: alert.semester,
-    departments: alert.departments,
-    status: alert.status
+    refId: alert.refId || "",
+    deadline: alert.deadline || "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const availableDepartments = ['CSE', 'ECE', 'EEE', 'MECH', 'CE', 'IT', 'AI&DS', 'AI&ML'];
-  const statusOptions = [
-    { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
-    { value: 'draft', label: 'Draft' }
-  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,33 +39,24 @@ export const EditExamAlert: React.FC<EditExamAlertProps> = ({ alert, onClose, on
         endDate: formData.endDate,
         year: formData.year,
         semester: formData.semester,
-        departments: formData.departments,
-        status: formData.status
+        refId: formData.refId,
+        deadline: formData.deadline,
       });
 
       onUpdate();
       onClose();
     } catch (error: any) {
-      console.error('Failed to update exam alert:', error);
-      setError(error.message || 'Failed to update exam alert');
+      console.error("Failed to update exam alert:", error);
+      setError(error.message || "Failed to update exam alert");
     } finally {
       setLoading(false);
     }
   };
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleDepartmentToggle = (department: string) => {
-    setFormData(prev => ({
-      ...prev,
-      departments: prev.departments.includes(department)
-        ? prev.departments.filter(d => d !== department)
-        : [...prev.departments, department]
+      [field]: value,
     }));
   };
 
@@ -92,7 +80,9 @@ export const EditExamAlert: React.FC<EditExamAlertProps> = ({ alert, onClose, on
               <div className="flex items-center">
                 <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
                 <div className="flex-1">
-                  <h3 className="text-sm font-medium text-red-800">Update Error</h3>
+                  <h3 className="text-sm font-medium text-red-800">
+                    Update Error
+                  </h3>
                   <p className="text-sm text-red-700 mt-1">{error}</p>
                 </div>
               </div>
@@ -109,7 +99,7 @@ export const EditExamAlert: React.FC<EditExamAlertProps> = ({ alert, onClose, on
                 type="text"
                 required
                 value={formData.title}
-                onChange={(e) => handleInputChange('title', e.target.value)}
+                onChange={(e) => handleInputChange("title", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="e.g., Internal Assessment-II - III Year"
               />
@@ -125,7 +115,9 @@ export const EditExamAlert: React.FC<EditExamAlertProps> = ({ alert, onClose, on
                   type="date"
                   required
                   value={formData.startDate}
-                  onChange={(e) => handleInputChange('startDate', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("startDate", e.target.value)
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
@@ -139,7 +131,7 @@ export const EditExamAlert: React.FC<EditExamAlertProps> = ({ alert, onClose, on
                   type="date"
                   required
                   value={formData.endDate}
-                  onChange={(e) => handleInputChange('endDate', e.target.value)}
+                  onChange={(e) => handleInputChange("endDate", e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
@@ -152,7 +144,9 @@ export const EditExamAlert: React.FC<EditExamAlertProps> = ({ alert, onClose, on
                 </label>
                 <select
                   value={formData.year}
-                  onChange={(e) => handleInputChange('year', parseInt(e.target.value))}
+                  onChange={(e) =>
+                    handleInputChange("year", parseInt(e.target.value))
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value={1}>I Year</option>
@@ -168,7 +162,9 @@ export const EditExamAlert: React.FC<EditExamAlertProps> = ({ alert, onClose, on
                 </label>
                 <select
                   value={formData.semester}
-                  onChange={(e) => handleInputChange('semester', parseInt(e.target.value))}
+                  onChange={(e) =>
+                    handleInputChange("semester", parseInt(e.target.value))
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value={1}>Semester 1</option>
@@ -183,41 +179,32 @@ export const EditExamAlert: React.FC<EditExamAlertProps> = ({ alert, onClose, on
               </div>
             </div>
 
+            {/* Ref ID Field */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Users className="inline h-4 w-4 mr-1" />
-                Departments
+                Ref ID
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {availableDepartments.map((dept) => (
-                  <label key={dept} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.departments.includes(dept)}
-                      onChange={() => handleDepartmentToggle(dept)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">{dept}</span>
-                  </label>
-                ))}
-              </div>
+              <input
+                type="text"
+                required
+                value={formData.refId}
+                onChange={(e) => handleInputChange("refId", e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter Reference ID"
+              />
             </div>
 
+            {/* Deadline Field */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status
+                Deadline
               </label>
-              <select
-                value={formData.status}
-                onChange={(e) => handleInputChange('status', e.target.value)}
+              <input
+                type="date"
+                value={formData.deadline || ""}
+                onChange={(e) => handleInputChange("deadline", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                {statusOptions.map(status => (
-                  <option key={status.value} value={status.value}>
-                    {status.label}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             <div className="flex justify-end space-x-3 pt-4">
@@ -229,12 +216,33 @@ export const EditExamAlert: React.FC<EditExamAlertProps> = ({ alert, onClose, on
                 Cancel
               </button>
               <button
+                type="button"
+                onClick={async () => {
+                  setLoading(true);
+                  setError(null);
+                  try {
+                    await examService.deleteExamAlert(alert.id);
+                    onUpdate();
+                    onClose();
+                  } catch (error: any) {
+                    setError(error.message || "Failed to delete exam alert");
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              >
+                <AlertTriangle className="h-4 w-4" />
+                <span>{loading ? "Deleting..." : "Delete Alert"}</span>
+              </button>
+              <button
                 type="submit"
                 disabled={loading}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
               >
                 <Save className="h-4 w-4" />
-                <span>{loading ? 'Updating...' : 'Update Alert'}</span>
+                <span>{loading ? "Updating..." : "Update Alert"}</span>
               </button>
             </div>
           </form>

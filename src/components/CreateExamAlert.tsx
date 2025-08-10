@@ -1,44 +1,63 @@
-import React, { useState } from 'react';
-import { X, Calendar, Users, Plus } from 'lucide-react';
-import { ExamAlert, departments } from '../data/mockData';
+import React, { useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { X, Calendar, Users, Plus } from "lucide-react";
+import { departments } from "../data/mockData";
+import { ExamAlert } from "../types";
+import { examService } from "../services/examService";
 
 interface CreateExamAlertProps {
   onClose: () => void;
-  onSubmit: (alert: Omit<ExamAlert, 'id' | 'createdAt'>) => void;
+  onSubmit: (alert: Omit<ExamAlert, "id" | "createdAt">) => void;
 }
 
-export const CreateExamAlert: React.FC<CreateExamAlertProps> = ({ onClose, onSubmit }) => {
+export const CreateExamAlert: React.FC<CreateExamAlertProps> = ({
+  onClose,
+  onSubmit,
+}) => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
-    title: '',
-    examType: '',
-    academicYear: '',
-    startDate: '',
-    endDate: '',
-    bookingDeadline: '',
-    year: 1,
+    title: "",
+    examType: "",
+    academicYear: "",
+    startDate: "",
+    endDate: "",
+    year: 2,
     semester: 1,
-    departments: [] as string[]
+    refId: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({
-      title: formData.title || `${formData.examType} - ${formData.academicYear}`,
+    if (!user) {
+      alert("User not found. Please log in.");
+      return;
+    }
+    const alertData = {
+      title:
+        formData.title || `${formData.examType} - ${formData.academicYear}`,
       startDate: formData.startDate,
       endDate: formData.endDate,
-      year: formData.year,
+      year: formData.year as 2 | 3,
       semester: formData.semester,
-      departments: formData.departments,
-      status: 'active' as const
-    });
+      refId: formData.refId,
+      status: "active" as const,
+      createdBy: user.id,
+    };
+    try {
+      await examService.createExamAlert(alertData);
+      alert("Exam alert created successfully!");
+      onSubmit(alertData);
+      onClose();
+    } catch (err) {
+      alert("Failed to create exam alert. Please try again.");
+      console.error(err);
+    }
   };
 
   const handleDepartmentToggle = (deptCode: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      departments: prev.departments.includes(deptCode)
-        ? prev.departments.filter(d => d !== deptCode)
-        : [...prev.departments, deptCode]
+      // departments logic removed
     }));
   };
 
@@ -47,13 +66,9 @@ export const CreateExamAlert: React.FC<CreateExamAlertProps> = ({ onClose, onSub
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center space-x-3">
-            <h2 className="text-xl font-bold text-gray-900">Create Examination Alert</h2>
-            <button
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              <span>New Alert</span>
-            </button>
+            <h2 className="text-xl font-bold text-gray-900">
+              Create Examination Alert
+            </h2>
           </div>
           <button
             onClick={onClose}
@@ -72,12 +87,18 @@ export const CreateExamAlert: React.FC<CreateExamAlertProps> = ({ onClose, onSub
               </label>
               <select
                 value={formData.examType}
-                onChange={(e) => setFormData(prev => ({ ...prev, examType: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, examType: e.target.value }))
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Select Exam Type</option>
-                <option value="Internal Assessment-I">Internal Assessment-I</option>
-                <option value="Internal Assessment-II">Internal Assessment-II</option>
+                <option value="Internal Assessment-I">
+                  Internal Assessment-I
+                </option>
+                <option value="Internal Assessment-II">
+                  Internal Assessment-II
+                </option>
                 <option value="Model Exam">Model Exam</option>
                 <option value="End Semester">End Semester</option>
               </select>
@@ -89,7 +110,12 @@ export const CreateExamAlert: React.FC<CreateExamAlertProps> = ({ onClose, onSub
               </label>
               <select
                 value={formData.academicYear}
-                onChange={(e) => setFormData(prev => ({ ...prev, academicYear: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    academicYear: e.target.value,
+                  }))
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Select Academic Year</option>
@@ -105,13 +131,16 @@ export const CreateExamAlert: React.FC<CreateExamAlertProps> = ({ onClose, onSub
               </label>
               <select
                 value={formData.year}
-                onChange={(e) => setFormData(prev => ({ ...prev, year: parseInt(e.target.value) }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    year: Number(e.target.value) as 2 | 3,
+                  }))
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value={1}>1st Year</option>
                 <option value={2}>2nd Year</option>
                 <option value={3}>3rd Year</option>
-                <option value={4}>4th Year</option>
               </select>
             </div>
 
@@ -121,7 +150,12 @@ export const CreateExamAlert: React.FC<CreateExamAlertProps> = ({ onClose, onSub
               </label>
               <select
                 value={formData.semester}
-                onChange={(e) => setFormData(prev => ({ ...prev, semester: parseInt(e.target.value) }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    semester: parseInt(e.target.value),
+                  }))
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Select Semester</option>
@@ -142,14 +176,17 @@ export const CreateExamAlert: React.FC<CreateExamAlertProps> = ({ onClose, onSub
               </label>
               <div className="relative">
                 <input
-                  type="text"
+                  type="date"
                   required
                   value={formData.startDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="dd-mm-yyyy"
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      startDate: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               </div>
             </div>
 
@@ -159,53 +196,51 @@ export const CreateExamAlert: React.FC<CreateExamAlertProps> = ({ onClose, onSub
               </label>
               <div className="relative">
                 <input
-                  type="text"
+                  type="date"
                   required
                   value={formData.endDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="dd-mm-yyyy"
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      endDate: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-                <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Booking Deadline
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  required
-                  value={formData.bookingDeadline}
-                  onChange={(e) => setFormData(prev => ({ ...prev, bookingDeadline: e.target.value }))}
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="dd-mm-yyyy"
-                />
-                <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               </div>
             </div>
           </div>
 
-          {/* Department Selection */}
+          {/* Ref ID Field */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Select Departments
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Ref ID
             </label>
-            <div className="grid grid-cols-3 gap-4">
-              {departments.map((dept) => (
-                <label key={dept.code} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formData.departments.includes(dept.code)}
-                    onChange={() => handleDepartmentToggle(dept.code)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">{dept.code}</span>
-                </label>
-              ))}
-            </div>
+            <input
+              type="text"
+              required
+              value={formData.refId}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, refId: e.target.value }))
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Enter Reference ID"
+            />
+          </div>
+
+          {/* Deadline Field */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Deadline
+            </label>
+            <input
+              type="date"
+              value={formData.deadline || ""}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, deadline: e.target.value }))
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
           </div>
 
           <div className="flex justify-end space-x-3 pt-4 border-t">

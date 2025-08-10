@@ -1,11 +1,10 @@
-import { supabase } from '../lib/supabase';
-import { staffService } from './staffService';
+import { supabase } from "../lib/supabase";
 
 export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: 'admin' | 'teacher';
+  role: "admin" | "teacher";
   department?: string;
 }
 
@@ -15,34 +14,35 @@ class AuthService {
   async signIn(email: string, password: string): Promise<AuthUser> {
     try {
       // Sign in with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
       if (authError) {
         throw new Error(authError.message);
       }
 
       if (!authData.user) {
-        throw new Error('Authentication failed');
+        throw new Error("Authentication failed");
       }
 
       // Get staff details from the database
       const { data: staffData, error: staffError } = await supabase
-        .from('staff_details')
-        .select('*')
-        .eq('user_id', authData.user.id)
+        .from("staff_details")
+        .select("*")
+        .eq("user_id", authData.user.id)
         .single();
 
       if (staffError) {
-        console.error('Error fetching staff details:', staffError);
+        console.error("Error fetching staff details:", staffError);
         // If staff details not found, create a basic user object
         const user: AuthUser = {
           id: authData.user.id,
-          email: authData.user.email || '',
-          name: authData.user.email?.split('@')[0] || 'User',
-          role: 'teacher' // Default role
+          email: authData.user.email || "",
+          name: authData.user.email?.split("@")[0] || "User",
+          role: "teacher", // Default role
         };
         this.currentUser = user;
         return user;
@@ -53,16 +53,14 @@ class AuthService {
         id: authData.user.id, // Use authentication UID
         email: staffData.email,
         name: staffData.name,
-        role: staffData.role as 'admin' | 'teacher',
+        role: staffData.role as "admin" | "teacher",
         department: staffData.department,
-        staffId: staffData.id // Add staff record id if needed
       };
 
       this.currentUser = user;
       return user;
-
     } catch (error) {
-      console.error('Sign in error:', error);
+      console.error("Sign in error:", error);
       throw error;
     }
   }
@@ -71,11 +69,11 @@ class AuthService {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Sign out error:', error);
+        console.error("Sign out error:", error);
       }
       this.currentUser = null;
     } catch (error) {
-      console.error('Sign out error:', error);
+      console.error("Sign out error:", error);
       this.currentUser = null;
     }
   }
@@ -83,8 +81,11 @@ class AuthService {
   async getCurrentUser(): Promise<AuthUser | null> {
     try {
       // Check if there's an active session
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
       if (error || !session) {
         this.currentUser = null;
         return null;
@@ -97,13 +98,13 @@ class AuthService {
 
       // Get staff details from the database
       const { data: staffData, error: staffError } = await supabase
-        .from('staff_details')
-        .select('*')
-        .eq('user_id', session.user.id)
+        .from("staff_details")
+        .select("*")
+        .eq("user_id", session.user.id)
         .single();
 
       if (staffError) {
-        console.error('Error fetching staff details:', staffError);
+        console.error("Error fetching staff details:", staffError);
         return null;
       }
 
@@ -112,16 +113,14 @@ class AuthService {
         id: session.user.id, // Use authentication UID
         email: staffData.email,
         name: staffData.name,
-        role: staffData.role as 'admin' | 'teacher',
+        role: staffData.role as "admin" | "teacher",
         department: staffData.department,
-        staffId: staffData.id // Add staff record id if needed
       };
 
       this.currentUser = user;
       return user;
-
     } catch (error) {
-      console.error('Get current user error:', error);
+      console.error("Get current user error:", error);
       return null;
     }
   }
@@ -133,4 +132,4 @@ class AuthService {
   }
 }
 
-export const authService = new AuthService(); 
+export const authService = new AuthService();
