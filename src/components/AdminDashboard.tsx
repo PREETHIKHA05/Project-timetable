@@ -188,9 +188,6 @@ export const AdminDashboard: React.FC = () => {
               >
                 <AlertTriangle className="h-5 w-5" />
                 <span>Exam Alerts</span>
-                <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                  New
-                </span>
               </button>
             </li>
             <li>
@@ -328,7 +325,7 @@ export const AdminDashboard: React.FC = () => {
                     </p>
                   </div>
                   <div className="text-right space-y-2">
-                    <div className="text-2xl font-bold">12 Departments</div>
+                    <div className="text-2xl font-bold">14 Departments</div>
                     <div className="text-2xl font-bold">150+ Faculty</div>
                     <div className="text-2xl font-bold">3000+ Students</div>
                   </div>
@@ -365,35 +362,6 @@ export const AdminDashboard: React.FC = () => {
 
               {/* Content Sections */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Recent Activity */}
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <FileText className="h-5 w-5 text-gray-600" />
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Recent Activity
-                    </h3>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Latest examination alerts and schedules
-                  </p>
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          internal Examination
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          2025-26 • odd Semester
-                        </p>
-                      </div>
-                      <span className="ml-auto text-xs text-gray-500">
-                        4 Year
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Department Overview */}
                 <div className="bg-white rounded-lg shadow-sm p-6">
                   <div className="flex items-center space-x-2 mb-4">
@@ -405,23 +373,35 @@ export const AdminDashboard: React.FC = () => {
                   <p className="text-sm text-gray-600 mb-4">
                     Examination status across all departments
                   </p>
-                  <div className="grid grid-cols-3 gap-3">
-                    {["CSE", "ECE", "EEE", "MECH", "CE", "IT"].map(
-                      (dept: string) => (
-                        <div
-                          key={dept}
-                          className="bg-blue-50 rounded-lg p-3 text-center"
-                        >
-                          <p className="text-sm font-medium text-blue-900">
-                            {dept}
-                          </p>
-                          <p className="text-xs text-blue-700">Department</p>
-                          <p className="text-xs text-green-600 font-medium">
-                            ✓ Active
-                          </p>
-                        </div>
-                      )
-                    )}
+                  <div className="grid grid-cols-4 gap-3">
+                    {[
+                      "CSE",
+                      "ECE",
+                      "EEE",
+                      "MECH",
+                      "IT",
+                      "AIDS",
+                      "AIML",
+                      "CSBS",
+                      "CYBER",
+                      "VLSI",
+                      "ACT",
+                      "MCT",
+                      "BME",
+                    ].map((dept: string) => (
+                      <div
+                        key={dept}
+                        className="bg-blue-50 rounded-lg p-6 text-center text-base"
+                      >
+                        <p className="text-sm font-medium text-blue-900">
+                          {dept}
+                        </p>
+                        <p className="text-xs text-blue-700">Department</p>
+                        <p className="text-xs text-green-600 font-medium">
+                          ✓ Active
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

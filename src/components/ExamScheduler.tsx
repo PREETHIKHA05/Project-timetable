@@ -143,7 +143,7 @@ export const ExamScheduler: React.FC<ExamSchedulerProps> = ({ exam, onClose, onS
               <p>Subject Code: {exam.subjectCode}</p>
               <p>Course ID: {exam.courseId}</p>
               <p>Department: {exam.department}</p>
-              <p>Year {exam.year} • Semester {exam.semester}</p>
+              <p>Year {exam.year}</p>
             </div>
           </div>
 
